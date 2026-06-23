@@ -21,10 +21,12 @@ npm run dev
 Crear `.env` tomando como base `.env.example`:
 
 ```txt
-VITE_API_BASE_URL=https://backend-url/api/v1
+VITE_API_BASE_URL=https://hackaton-20261-front-587720740455.us-east1.run.app/api/v1
 ```
 
 Las variables `PG_HOST`, `PG_PORT`, `PG_DB`, `PG_USER` y `PG_PASSWORD` pertenecen al backend/base de datos, no al frontend.
+
+Cada equipo debe iniciar sesion con su propio `TEAM_CODE`, email y password asignados.
 
 ## Scripts
 
