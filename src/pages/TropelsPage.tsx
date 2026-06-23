@@ -14,6 +14,12 @@ const sortOptions: { value: TropelSort; label: string }[] = [
   { value: 'chaosIndex,desc', label: 'Caos' },
 ]
 
+const sortButtons: { value: TropelSort; label: string; icon: string }[] = [
+  { value: 'name,asc', label: 'Nombre', icon: '↑' },
+  { value: 'updatedAt,desc', label: 'Actualizado', icon: '↓' },
+  { value: 'chaosIndex,desc', label: 'Caos', icon: '↓' },
+]
+
 function readPage(value: string | null) {
   const page = Number(value)
   return Number.isInteger(page) && page >= 0 ? page : 0
@@ -215,21 +221,6 @@ export function TropelsPage() {
           </select>
         </label>
 
-        <label>
-          <span className="text-sm font-medium">Orden</span>
-          <select
-            value={filters.sort}
-            onChange={(event) => updateFilters({ sort: event.target.value as TropelSort })}
-            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 outline-none focus:border-emerald-700"
-          >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
         <div className="flex items-end gap-2 md:col-span-6">
           <button
             type="submit"
@@ -283,7 +274,52 @@ export function TropelsPage() {
         )}
 
         {!error && data && data.content.length > 0 && (
-          <div className="divide-y divide-stone-100">
+          <div>
+            <div className="hidden grid-cols-[1.3fr_1fr_1fr_1fr] gap-3 border-b border-stone-200 bg-stone-50 px-4 py-3 text-left text-xs font-semibold uppercase text-stone-500 md:grid">
+              <SortHeader
+                label="Nombre"
+                icon="↑"
+                active={filters.sort === 'name,asc'}
+                onClick={() => updateFilters({ sort: 'name,asc' })}
+              />
+              <span>Especie</span>
+              <span>Estado</span>
+              <span>Sector</span>
+              <div className="col-span-4 grid gap-2 sm:grid-cols-3">
+                <span>Energia</span>
+                <SortHeader
+                  label="Caos"
+                  icon="↓"
+                  active={filters.sort === 'chaosIndex,desc'}
+                  onClick={() => updateFilters({ sort: 'chaosIndex,desc' })}
+                />
+                <SortHeader
+                  label="Actualizado"
+                  icon="↓"
+                  active={filters.sort === 'updatedAt,desc'}
+                  onClick={() => updateFilters({ sort: 'updatedAt,desc' })}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto border-b border-stone-200 px-4 py-3 md:hidden">
+              {sortButtons.map((button) => (
+                <button
+                  key={button.value}
+                  type="button"
+                  onClick={() => updateFilters({ sort: button.value })}
+                  className={`whitespace-nowrap rounded-md border px-3 py-2 text-sm font-semibold ${
+                    filters.sort === button.value
+                      ? 'border-emerald-700 bg-emerald-700 text-white'
+                      : 'border-stone-300 text-stone-700'
+                  }`}
+                >
+                  {button.label} {button.icon}
+                </button>
+              ))}
+            </div>
+
+            <div className="divide-y divide-stone-100">
             {data.content.map((tropel) => (
               <article
                 key={tropel.id}
@@ -309,11 +345,15 @@ export function TropelsPage() {
                   <div className="grid gap-2 sm:grid-cols-3">
                     <Meter label="Energia" value={tropel.energyLevel} />
                     <Meter label="Caos" value={tropel.chaosIndex} />
-                    <Meter label="Mutacion" value={tropel.mutationStage * 20} />
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-stone-500">Actualizado</p>
+                      <p className="text-sm">{new Date(tropel.updatedAt).toLocaleDateString()}</p>
+                    </div>
                   </div>
                 </div>
               </article>
             ))}
+            </div>
           </div>
         )}
       </div>
@@ -342,6 +382,31 @@ export function TropelsPage() {
         </div>
       </div>
     </section>
+  )
+}
+
+function SortHeader({
+  label,
+  icon,
+  active,
+  onClick,
+}: {
+  label: string
+  icon: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 text-left text-xs font-semibold uppercase ${
+        active ? 'text-emerald-700' : 'text-stone-500 hover:text-stone-900'
+      }`}
+    >
+      <span>{label}</span>
+      <span aria-hidden="true">{icon}</span>
+    </button>
   )
 }
 
