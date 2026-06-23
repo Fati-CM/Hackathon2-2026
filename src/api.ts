@@ -3,8 +3,10 @@ import type {
   DashboardSummary,
   LoginForm,
   LoginResponse,
+  MutableSignalStatus,
   PaginatedTropels,
   SectorsResponse,
+  Signal,
   SignalFeedFilters,
   SignalFeedResponse,
   TropelFilters,
@@ -121,4 +123,19 @@ export function getSignalsFeed(
   if (filters.q) params.set('q', filters.q)
 
   return request<SignalFeedResponse>(`/signals/feed?${params.toString()}`, { signal }, token)
+}
+
+export function getSignal(token: string, id: string, signal?: AbortSignal) {
+  return request<Signal>(`/signals/${id}`, { signal }, token)
+}
+
+export function updateSignalStatus(token: string, id: string, status: MutableSignalStatus) {
+  return request<Signal>(
+    `/signals/${id}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    },
+    token,
+  )
 }

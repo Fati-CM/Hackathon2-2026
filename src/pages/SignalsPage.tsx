@@ -17,6 +17,16 @@ const signalTypes: SignalType[] = [
 const severities: Severity[] = ['LEVE', 'MODERADO', 'GRAVE', 'CRITICO']
 const statuses: SignalStatus[] = ['RECIBIDA', 'PROCESANDO', 'ATENDIDA']
 const scrollKey = 'tropelcare_signals_scroll'
+const feedSnapshotKey = 'tropelcare_signals_snapshot'
+const updatedSignalKey = 'tropelcare_updated_signal'
+
+type FeedSnapshot = {
+  filterKey: string
+  signals: Signal[]
+  nextCursor: string | null
+  hasMore: boolean
+  totalEstimate: number
+}
 
 function appendUnique(current: Signal[], incoming: Signal[]) {
   const ids = new Set(current.map((signal) => signal.id))
@@ -30,6 +40,24 @@ function appendUnique(current: Signal[], incoming: Signal[]) {
   }
 
   return next
+}
+
+function readUpdatedSignal() {
+  const raw = sessionStorage.getItem(updatedSignalKey)
+  if (!raw) return null
+
+  try {
+    return JSON.parse(raw) as Signal
+  } catch {
+    return null
+  }
+}
+
+function applyUpdatedSignal(signals: Signal[]) {
+  const updated = readUpdatedSignal()
+  if (!updated) return signals
+
+  return signals.map((signal) => (signal.id === updated.id ? updated : signal))
 }
 
 function cleanParams(filters: SignalFeedFilters) {
@@ -58,6 +86,7 @@ export function SignalsPage() {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const inFlightRef = useRef(false)
   const activeKeyRef = useRef('')
+  const restoredRef = useRef(false)
 
   const filters = useMemo<SignalFeedFilters>(
     () => ({
@@ -90,6 +119,32 @@ export function SignalsPage() {
   useEffect(() => {
     if (!token) return
 
+    if (!restoredRef.current) {
+      const rawSnapshot = sessionStorage.getItem(feedSnapshotKey)
+
+      if (rawSnapshot) {
+        try {
+          const snapshot = JSON.parse(rawSnapshot) as FeedSnapshot
+
+          if (snapshot.filterKey === filterKey) {
+            restoredRef.current = true
+            activeKeyRef.current = filterKey
+            inFlightRef.current = false
+            setSignals(applyUpdatedSignal(snapshot.signals))
+            setNextCursor(snapshot.nextCursor)
+            setHasMore(snapshot.hasMore)
+            setTotalEstimate(snapshot.totalEstimate)
+            setError('')
+            setPageError('')
+            setLoadingFirstPage(false)
+            return
+          }
+        } catch {
+          sessionStorage.removeItem(feedSnapshotKey)
+        }
+      }
+    }
+
     const controller = new AbortController()
     const currentToken = token
     const currentKey = filterKey
@@ -109,7 +164,7 @@ export function SignalsPage() {
 
         if (activeKeyRef.current !== currentKey) return
 
-        setSignals(appendUnique([], response.items))
+        setSignals(applyUpdatedSignal(appendUnique([], response.items)))
         setNextCursor(response.nextCursor)
         setHasMore(response.hasMore)
         setTotalEstimate(response.totalEstimate)
@@ -144,7 +199,7 @@ export function SignalsPage() {
 
       if (activeKeyRef.current !== currentKey) return
 
-      setSignals((current) => appendUnique(current, response.items))
+      setSignals((current) => applyUpdatedSignal(appendUnique(current, response.items)))
       setNextCursor(response.nextCursor)
       setHasMore(response.hasMore)
       setTotalEstimate(response.totalEstimate)
@@ -201,6 +256,16 @@ export function SignalsPage() {
 
   function saveScroll() {
     sessionStorage.setItem(scrollKey, String(window.scrollY))
+    sessionStorage.setItem(
+      feedSnapshotKey,
+      JSON.stringify({
+        filterKey,
+        signals,
+        nextCursor,
+        hasMore,
+        totalEstimate,
+      } satisfies FeedSnapshot),
+    )
   }
 
   return (

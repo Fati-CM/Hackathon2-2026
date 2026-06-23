@@ -109,6 +109,8 @@ export type Severity = 'LEVE' | 'MODERADO' | 'GRAVE' | 'CRITICO'
 
 export type SignalStatus = 'RECIBIDA' | 'PROCESANDO' | 'ATENDIDA'
 
+export type MutableSignalStatus = 'PROCESANDO' | 'ATENDIDA'
+
 export type Signal = {
   id: string
   signalType: SignalType
