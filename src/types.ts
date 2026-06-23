@@ -50,11 +50,13 @@ export type Sector = {
   id: string
   sectorCode: string
   name: string
-  climate: string
+  climate: Climate
   capacity: number
   currentLoad: number
   stabilityLevel: number
 }
+
+export type Climate = 'PIXEL_FOREST' | 'NEON_CAVE' | 'CLOUD_AQUARIUM' | 'RETRO_ARCADE'
 
 export type Tropel = {
   id: string
@@ -139,4 +141,29 @@ export type SignalFeedResponse = {
   nextCursor: string | null
   hasMore: boolean
   totalEstimate: number
+}
+
+export type SectorStoryStage = {
+  id: string
+  order: number
+  title: string
+  narrative: string
+  dominantEvent: SignalType
+  metrics: {
+    stability: number
+    energy: number
+    alerts: number
+  }
+  assetKey: string
+  colorToken: string
+  progress: number
+}
+
+export type SectorStory = {
+  sector: {
+    id: string
+    name: string
+    climate: Climate
+  }
+  stages: SectorStoryStage[]
 }

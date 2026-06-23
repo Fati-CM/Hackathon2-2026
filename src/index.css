@@ -21,3 +21,123 @@ input,
 select {
   font: inherit;
 }
+
+.story-progress {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7e5e4;
+}
+
+.story-progress > div {
+  height: 100%;
+  border-radius: inherit;
+  background: #047857;
+  transition: width 180ms ease;
+}
+
+.story-visual-wrap {
+  position: sticky;
+  top: 24px;
+  height: fit-content;
+}
+
+.story-visual {
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  border-radius: 8px;
+  padding: 28px;
+  color: white;
+  box-shadow: 0 20px 40px rgb(15 23 42 / 0.18);
+}
+
+.story-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.28) 1px, transparent 1px);
+  background-size: 34px 34px;
+}
+
+.story-core,
+.story-meter-panel,
+.story-progress-number {
+  position: relative;
+}
+
+.story-core {
+  max-width: 360px;
+}
+
+.story-meter-panel {
+  margin-top: 180px;
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgb(255 255 255 / 0.14);
+  backdrop-filter: blur(8px);
+}
+
+.story-progress-number {
+  margin-top: 18px;
+  font-size: 42px;
+  font-weight: 800;
+}
+
+.story-stage {
+  min-height: 360px;
+  scroll-margin-block: 120px;
+}
+
+@supports (animation-timeline: view()) {
+  .story-stage {
+    animation: story-stage-fade both ease-out;
+    animation-timeline: view();
+    animation-range: entry 10% cover 35%;
+  }
+}
+
+@keyframes story-stage-fade {
+  from {
+    opacity: 0.45;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1023px) {
+  .story-visual-wrap {
+    position: static;
+  }
+
+  .story-visual {
+    min-height: 420px;
+  }
+
+  .story-meter-panel {
+    margin-top: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

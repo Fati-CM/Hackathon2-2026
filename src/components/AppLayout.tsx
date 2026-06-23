@@ -5,6 +5,7 @@ const links = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/tropels', label: 'Tropeles' },
   { to: '/signals', label: 'Senales' },
+  { to: '/sectors', label: 'Sectores' },
 ]
 
 export function AppLayout() {

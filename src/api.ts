@@ -6,6 +6,7 @@ import type {
   MutableSignalStatus,
   PaginatedTropels,
   SectorsResponse,
+  SectorStory,
   Signal,
   SignalFeedFilters,
   SignalFeedResponse,
@@ -91,6 +92,10 @@ export function getDashboardSummary(token: string) {
 
 export function getSectors(token: string, signal?: AbortSignal) {
   return request<SectorsResponse>('/sectors', { signal }, token)
+}
+
+export function getSectorStory(token: string, id: string, signal?: AbortSignal) {
+  return request<SectorStory>(`/sectors/${id}/story`, { signal }, token)
 }
 
 export function getTropels(token: string, filters: TropelFilters, signal?: AbortSignal) {

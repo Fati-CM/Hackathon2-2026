@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { SignalDetailPage } from './pages/SignalDetailPage'
 import { SignalsPage } from './pages/SignalsPage'
+import { SectorsPage } from './pages/SectorsPage'
 import { StoryPage } from './pages/StoryPage'
 import { TropelsPage } from './pages/TropelsPage'
 
@@ -25,6 +26,7 @@ function App() {
           <Route path="/tropels" element={<TropelsPage />} />
           <Route path="/signals" element={<SignalsPage />} />
           <Route path="/signals/:id" element={<SignalDetailPage />} />
+          <Route path="/sectors" element={<SectorsPage />} />
           <Route path="/sectors/:id/story" element={<StoryPage />} />
         </Route>
       </Route>
