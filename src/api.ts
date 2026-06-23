@@ -36,10 +36,19 @@ async function request<T>(
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...options,
-    headers,
-  })
+  let response: Response
+
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      ...options,
+      headers,
+    })
+  } catch {
+    throw new ApiError(
+      'No se pudo conectar con la API. Abre el front en http://localhost:5173 y revisa VITE_API_BASE_URL.',
+      0,
+    )
+  }
 
   if (!response.ok) {
     throw new ApiError(await parseError(response), response.status)

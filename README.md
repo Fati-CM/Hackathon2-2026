@@ -16,6 +16,14 @@ npm install
 npm run dev
 ```
 
+Abrir siempre:
+
+```txt
+http://localhost:5173
+```
+
+No usar Live Server ni `127.0.0.1`, porque el backend del curso permite CORS para `http://localhost:5173`.
+
 ## Variables
 
 Crear `.env` tomando como base `.env.example`:
