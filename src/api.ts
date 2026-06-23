@@ -5,6 +5,8 @@ import type {
   LoginResponse,
   PaginatedTropels,
   SectorsResponse,
+  SignalFeedFilters,
+  SignalFeedResponse,
   TropelFilters,
   User,
 } from './types'
@@ -101,4 +103,22 @@ export function getTropels(token: string, filters: TropelFilters, signal?: Abort
   if (filters.q) params.set('q', filters.q)
 
   return request<PaginatedTropels>(`/tropels?${params.toString()}`, { signal }, token)
+}
+
+export function getSignalsFeed(
+  token: string,
+  filters: SignalFeedFilters,
+  cursor?: string | null,
+  signal?: AbortSignal,
+) {
+  const params = new URLSearchParams()
+  params.set('limit', String(filters.limit))
+
+  if (cursor) params.set('cursor', cursor)
+  if (filters.signalType) params.set('signalType', filters.signalType)
+  if (filters.severity) params.set('severity', filters.severity)
+  if (filters.status) params.set('status', filters.status)
+  if (filters.q) params.set('q', filters.q)
+
+  return request<SignalFeedResponse>(`/signals/feed?${params.toString()}`, { signal }, token)
 }
