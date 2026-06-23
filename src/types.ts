@@ -39,3 +39,59 @@ export type LoginForm = {
   email: string
   password: string
 }
+
+export type Species = 'BLOBITO' | 'CHISPA' | 'GRUNON' | 'DORMILON' | 'GLITCHY'
+
+export type VitalState = 'ESTABLE' | 'HAMBRIENTO' | 'AGITADO' | 'MUTANDO' | 'CRITICO'
+
+export type TropelSort = 'name,asc' | 'updatedAt,desc' | 'chaosIndex,desc'
+
+export type Sector = {
+  id: string
+  sectorCode: string
+  name: string
+  climate: string
+  capacity: number
+  currentLoad: number
+  stabilityLevel: number
+}
+
+export type Tropel = {
+  id: string
+  name: string
+  species: Species
+  vitalState: VitalState
+  energyLevel: number
+  chaosIndex: number
+  mutationStage: number
+  guardianName: string
+  sector: {
+    id: string
+    name: string
+    sectorCode: string
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+export type PaginatedTropels = {
+  content: Tropel[]
+  totalElements: number
+  totalPages: number
+  currentPage: number
+  size: number
+}
+
+export type TropelFilters = {
+  page: number
+  size: number
+  species?: string
+  vitalState?: string
+  sectorId?: string
+  q?: string
+  sort: TropelSort
+}
+
+export type SectorsResponse = {
+  items: Sector[]
+}

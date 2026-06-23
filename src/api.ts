@@ -1,4 +1,13 @@
-import type { ApiErrorResponse, DashboardSummary, LoginForm, LoginResponse, User } from './types'
+import type {
+  ApiErrorResponse,
+  DashboardSummary,
+  LoginForm,
+  LoginResponse,
+  PaginatedTropels,
+  SectorsResponse,
+  TropelFilters,
+  User,
+} from './types'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
 
@@ -43,7 +52,11 @@ async function request<T>(
       ...options,
       headers,
     })
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw err
+    }
+
     throw new ApiError(
       'No se pudo conectar con la API. Abre el front en http://localhost:5173 y revisa VITE_API_BASE_URL.',
       0,
@@ -70,4 +83,22 @@ export function getCurrentUser(token: string) {
 
 export function getDashboardSummary(token: string) {
   return request<DashboardSummary>('/dashboard/summary', {}, token)
+}
+
+export function getSectors(token: string, signal?: AbortSignal) {
+  return request<SectorsResponse>('/sectors', { signal }, token)
+}
+
+export function getTropels(token: string, filters: TropelFilters, signal?: AbortSignal) {
+  const params = new URLSearchParams()
+  params.set('page', String(filters.page))
+  params.set('size', String(filters.size))
+  params.set('sort', filters.sort)
+
+  if (filters.species) params.set('species', filters.species)
+  if (filters.vitalState) params.set('vitalState', filters.vitalState)
+  if (filters.sectorId) params.set('sectorId', filters.sectorId)
+  if (filters.q) params.set('q', filters.q)
+
+  return request<PaginatedTropels>(`/tropels?${params.toString()}`, { signal }, token)
 }
