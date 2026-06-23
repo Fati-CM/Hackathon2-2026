@@ -46,6 +46,17 @@ export type VitalState = 'ESTABLE' | 'HAMBRIENTO' | 'AGITADO' | 'MUTANDO' | 'CRI
 
 export type TropelSort = 'name,asc' | 'updatedAt,desc' | 'chaosIndex,desc'
 
+export type TropelOrderField =
+  | 'name'
+  | 'species'
+  | 'vitalState'
+  | 'sector'
+  | 'energyLevel'
+  | 'chaosIndex'
+  | 'updatedAt'
+
+export type SortDirection = 'asc' | 'desc'
+
 export type Sector = {
   id: string
   sectorCode: string
@@ -92,6 +103,8 @@ export type TropelFilters = {
   sectorId?: string
   q?: string
   sort: TropelSort
+  orderBy: TropelOrderField
+  orderDir: SortDirection
 }
 
 export type SectorsResponse = {

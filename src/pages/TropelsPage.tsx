@@ -3,21 +3,29 @@ import type { FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getSectors, getTropels } from '../api'
 import { useAuth } from '../context/AuthContext'
-import type { PaginatedTropels, Sector, Species, TropelFilters, TropelSort, VitalState } from '../types'
+import type {
+  PaginatedTropels,
+  Sector,
+  SortDirection,
+  Species,
+  Tropel,
+  TropelFilters,
+  TropelOrderField,
+  TropelSort,
+  VitalState,
+} from '../types'
 
 const speciesOptions: Species[] = ['BLOBITO', 'CHISPA', 'GRUNON', 'DORMILON', 'GLITCHY']
 const vitalStateOptions: VitalState[] = ['ESTABLE', 'HAMBRIENTO', 'AGITADO', 'MUTANDO', 'CRITICO']
 const sizeOptions = [10, 20, 50]
-const sortOptions: { value: TropelSort; label: string }[] = [
-  { value: 'updatedAt,desc', label: 'Actualizados' },
-  { value: 'name,asc', label: 'Nombre' },
-  { value: 'chaosIndex,desc', label: 'Caos' },
-]
-
-const sortButtons: { value: TropelSort; label: string; icon: string }[] = [
-  { value: 'name,asc', label: 'Nombre', icon: '↑' },
-  { value: 'updatedAt,desc', label: 'Actualizado', icon: '↓' },
-  { value: 'chaosIndex,desc', label: 'Caos', icon: '↓' },
+const orderFields: { value: TropelOrderField; label: string }[] = [
+  { value: 'name', label: 'Nombre' },
+  { value: 'species', label: 'Especie' },
+  { value: 'vitalState', label: 'Estado' },
+  { value: 'sector', label: 'Sector' },
+  { value: 'energyLevel', label: 'Energia' },
+  { value: 'chaosIndex', label: 'Caos' },
+  { value: 'updatedAt', label: 'Actualizado' },
 ]
 
 function readPage(value: string | null) {
@@ -30,8 +38,51 @@ function readSize(value: string | null) {
   return sizeOptions.includes(size) ? size : 20
 }
 
-function readSort(value: string | null): TropelSort {
-  return sortOptions.some((option) => option.value === value) ? (value as TropelSort) : 'updatedAt,desc'
+function readOrderBy(value: string | null, legacySort: string | null): TropelOrderField {
+  if (orderFields.some((field) => field.value === value)) return value as TropelOrderField
+  if (legacySort === 'name,asc') return 'name'
+  if (legacySort === 'chaosIndex,desc') return 'chaosIndex'
+  return 'updatedAt'
+}
+
+function readOrderDir(value: string | null, legacySort: string | null): SortDirection {
+  if (value === 'asc' || value === 'desc') return value
+  if (legacySort === 'name,asc') return 'asc'
+  return 'desc'
+}
+
+function getServerSort(orderBy: TropelOrderField, orderDir: SortDirection): TropelSort {
+  if (orderBy === 'name' && orderDir === 'asc') return 'name,asc'
+  if (orderBy === 'chaosIndex' && orderDir === 'desc') return 'chaosIndex,desc'
+  if (orderBy === 'updatedAt' && orderDir === 'desc') return 'updatedAt,desc'
+  return 'updatedAt,desc'
+}
+
+function compareText(first: string, second: string, direction: SortDirection) {
+  const result = first.localeCompare(second)
+  return direction === 'asc' ? result : -result
+}
+
+function compareNumber(first: number, second: number, direction: SortDirection) {
+  const result = first - second
+  return direction === 'asc' ? result : -result
+}
+
+function compareDate(first: string, second: string, direction: SortDirection) {
+  const result = new Date(first).getTime() - new Date(second).getTime()
+  return direction === 'asc' ? result : -result
+}
+
+function sortTropels(items: Tropel[], orderBy: TropelOrderField, orderDir: SortDirection) {
+  return [...items].sort((first, second) => {
+    if (orderBy === 'name') return compareText(first.name, second.name, orderDir)
+    if (orderBy === 'species') return compareText(first.species, second.species, orderDir)
+    if (orderBy === 'vitalState') return compareText(first.vitalState, second.vitalState, orderDir)
+    if (orderBy === 'sector') return compareText(first.sector.name, second.sector.name, orderDir)
+    if (orderBy === 'energyLevel') return compareNumber(first.energyLevel, second.energyLevel, orderDir)
+    if (orderBy === 'chaosIndex') return compareNumber(first.chaosIndex, second.chaosIndex, orderDir)
+    return compareDate(first.updatedAt, second.updatedAt, orderDir)
+  })
 }
 
 function cleanParams(filters: TropelFilters) {
@@ -39,7 +90,8 @@ function cleanParams(filters: TropelFilters) {
 
   if (filters.page > 0) params.set('page', String(filters.page))
   if (filters.size !== 20) params.set('size', String(filters.size))
-  if (filters.sort !== 'updatedAt,desc') params.set('sort', filters.sort)
+  if (filters.orderBy !== 'updatedAt') params.set('orderBy', filters.orderBy)
+  if (filters.orderDir !== 'desc') params.set('orderDir', filters.orderDir)
   if (filters.species) params.set('species', filters.species)
   if (filters.vitalState) params.set('vitalState', filters.vitalState)
   if (filters.sectorId) params.set('sectorId', filters.sectorId)
@@ -65,7 +117,12 @@ export function TropelsPage() {
       vitalState: searchParams.get('vitalState') ?? '',
       sectorId: searchParams.get('sectorId') ?? '',
       q: searchParams.get('q') ?? '',
-      sort: readSort(searchParams.get('sort')),
+      orderBy: readOrderBy(searchParams.get('orderBy'), searchParams.get('sort')),
+      orderDir: readOrderDir(searchParams.get('orderDir'), searchParams.get('sort')),
+      sort: getServerSort(
+        readOrderBy(searchParams.get('orderBy'), searchParams.get('sort')),
+        readOrderDir(searchParams.get('orderDir'), searchParams.get('sort')),
+      ),
     }),
     [searchParams],
   )
@@ -148,6 +205,19 @@ export function TropelsPage() {
 
   const currentPage = data?.currentPage ?? filters.page
   const totalPages = data?.totalPages ?? 0
+  const visibleTropels = useMemo(
+    () => sortTropels(data?.content ?? [], filters.orderBy, filters.orderDir),
+    [data, filters.orderBy, filters.orderDir],
+  )
+
+  function updateOrder(orderBy: TropelOrderField) {
+    const orderDir = filters.orderBy === orderBy && filters.orderDir === 'asc' ? 'desc' : 'asc'
+    updateFilters({
+      orderBy,
+      orderDir,
+      sort: getServerSort(orderBy, orderDir),
+    })
+  }
 
   return (
     <section className="space-y-5">
@@ -278,49 +348,76 @@ export function TropelsPage() {
             <div className="hidden grid-cols-[1.3fr_1fr_1fr_1fr] gap-3 border-b border-stone-200 bg-stone-50 px-4 py-3 text-left text-xs font-semibold uppercase text-stone-500 md:grid">
               <SortHeader
                 label="Nombre"
-                icon="↑"
-                active={filters.sort === 'name,asc'}
-                onClick={() => updateFilters({ sort: 'name,asc' })}
+                field="name"
+                orderBy={filters.orderBy}
+                orderDir={filters.orderDir}
+                onClick={updateOrder}
               />
-              <span>Especie</span>
-              <span>Estado</span>
-              <span>Sector</span>
-              <div className="col-span-4 grid gap-2 sm:grid-cols-3">
-                <span>Energia</span>
+              <SortHeader
+                label="Especie"
+                field="species"
+                orderBy={filters.orderBy}
+                orderDir={filters.orderDir}
+                onClick={updateOrder}
+              />
+              <SortHeader
+                label="Estado"
+                field="vitalState"
+                orderBy={filters.orderBy}
+                orderDir={filters.orderDir}
+                onClick={updateOrder}
+              />
+              <SortHeader
+                label="Sector"
+                field="sector"
+                orderBy={filters.orderBy}
+                orderDir={filters.orderDir}
+                onClick={updateOrder}
+              />
+              <div className="col-span-4 grid gap-2 sm:grid-cols-4">
+                <SortHeader
+                  label="Energia"
+                  field="energyLevel"
+                  orderBy={filters.orderBy}
+                  orderDir={filters.orderDir}
+                  onClick={updateOrder}
+                />
                 <SortHeader
                   label="Caos"
-                  icon="↓"
-                  active={filters.sort === 'chaosIndex,desc'}
-                  onClick={() => updateFilters({ sort: 'chaosIndex,desc' })}
+                  field="chaosIndex"
+                  orderBy={filters.orderBy}
+                  orderDir={filters.orderDir}
+                  onClick={updateOrder}
                 />
                 <SortHeader
                   label="Actualizado"
-                  icon="↓"
-                  active={filters.sort === 'updatedAt,desc'}
-                  onClick={() => updateFilters({ sort: 'updatedAt,desc' })}
+                  field="updatedAt"
+                  orderBy={filters.orderBy}
+                  orderDir={filters.orderDir}
+                  onClick={updateOrder}
                 />
               </div>
             </div>
 
             <div className="flex gap-2 overflow-x-auto border-b border-stone-200 px-4 py-3 md:hidden">
-              {sortButtons.map((button) => (
+              {orderFields.map((button) => (
                 <button
                   key={button.value}
                   type="button"
-                  onClick={() => updateFilters({ sort: button.value })}
+                  onClick={() => updateOrder(button.value)}
                   className={`whitespace-nowrap rounded-md border px-3 py-2 text-sm font-semibold ${
-                    filters.sort === button.value
+                    filters.orderBy === button.value
                       ? 'border-emerald-700 bg-emerald-700 text-white'
                       : 'border-stone-300 text-stone-700'
                   }`}
                 >
-                  {button.label} {button.icon}
+                  {button.label} {filters.orderBy === button.value ? (filters.orderDir === 'asc' ? '↑' : '↓') : ''}
                 </button>
               ))}
             </div>
 
             <div className="divide-y divide-stone-100">
-            {data.content.map((tropel) => (
+            {visibleTropels.map((tropel) => (
               <article
                 key={tropel.id}
                 className="grid gap-3 px-4 py-4 md:grid-cols-[1.3fr_1fr_1fr_1fr]"
@@ -342,9 +439,13 @@ export function TropelsPage() {
                   <p className="text-sm">{tropel.sector.name}</p>
                 </div>
                 <div className="md:col-span-4">
-                  <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="grid gap-2 sm:grid-cols-4">
                     <Meter label="Energia" value={tropel.energyLevel} />
                     <Meter label="Caos" value={tropel.chaosIndex} />
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-stone-500">Mutacion</p>
+                      <p className="text-sm">{tropel.mutationStage}</p>
+                    </div>
                     <div>
                       <p className="text-xs font-semibold uppercase text-stone-500">Actualizado</p>
                       <p className="text-sm">{new Date(tropel.updatedAt).toLocaleDateString()}</p>
@@ -387,25 +488,29 @@ export function TropelsPage() {
 
 function SortHeader({
   label,
-  icon,
-  active,
+  field,
+  orderBy,
+  orderDir,
   onClick,
 }: {
   label: string
-  icon: string
-  active: boolean
-  onClick: () => void
+  field: TropelOrderField
+  orderBy: TropelOrderField
+  orderDir: SortDirection
+  onClick: (field: TropelOrderField) => void
 }) {
+  const active = orderBy === field
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => onClick(field)}
       className={`inline-flex items-center gap-1 text-left text-xs font-semibold uppercase ${
         active ? 'text-emerald-700' : 'text-stone-500 hover:text-stone-900'
       }`}
     >
       <span>{label}</span>
-      <span aria-hidden="true">{icon}</span>
+      <span aria-hidden="true">{active ? (orderDir === 'asc' ? '↑' : '↓') : '↕'}</span>
     </button>
   )
 }
